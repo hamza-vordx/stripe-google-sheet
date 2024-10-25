@@ -21,8 +21,21 @@ Run the following command to install dependencies:
 
 ### Step 3: Set Up Webhook on Stripe
 
-1. In the Stripe Dashboard, add a webhook for the invoice.payment_succeeded event.
-2. Use the URL pointing to your stripe_webhook_handler.php script.
+1. Subscription Events
+   1. invoice.paid: Triggered when an invoice for a subscription is successfully paid. Use this event to grant access to subscription services.
+   2. invoice.payment_failed: Triggered when a payment for a subscription invoice fails. This event can be used to notify customers about payment failures.
+   3. customer.subscription.updated: Triggered when a subscription is updated. Use this to notify customers or update your records.
+   4. customer.subscription.deleted: Triggered when a subscription is canceled or expires. This event can be used to revoke access to services.
+
+2. One-Time Payment Events
+   1. checkout.session.completed: Triggered when a Checkout Session is completed successfully. This is used for fulfilling one-time purchases.
+   2. payment_intent.succeeded: Triggered when a PaymentIntent is successfully completed. Confirm that a payment was received.
+   3. payment_intent.payment_failed: Triggered when a PaymentIntent fails. Notify the customer about the failure.
+
+Webhook Handler Example
+For processing webhook events, refer to the example webhook handler provided in the code section. Make sure to set your STRIPE_WEBHOOK_SECRET and handle each event appropriately.
+  
+   
 
 File Overview
 1. checkout.php: Checkout page to initiate payments.
