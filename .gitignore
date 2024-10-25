@@ -4,6 +4,7 @@
 # Environment configuration
 /config.php
 
+config.php
 # Logs
 /logs/
 

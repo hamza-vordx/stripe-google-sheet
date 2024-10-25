@@ -2,7 +2,7 @@
 
 // Stripe API Configuration
 const STRIPE_SECRET_KEY = 'sk_test_51PvxHjEPxSKXpq7LLvdGonHGm6XyruoWO4tOKZTCp7ZXhjTSWMLTXzAA1sQTbsnlCMdn1QWuB9N65lzloThKsk8t00x2L2fCEM';
-const STRIPE_WEBHOOK_SECRET = 'your_webhook_secret_key';
+const STRIPE_WEBHOOK_SECRET = 'whsec_r0346xYUPjmRbhiawQPPdRcm8Vdj7647';
 
 // Google Sheets API Configuration
 const GOOGLE_SHEET_ID = 'your_spreadsheet_id';
