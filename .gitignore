@@ -5,6 +5,8 @@
 /config.php
 
 config.php
+token.json
+token_old.json
 # Logs
 /logs/
 
