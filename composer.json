@@ -2,6 +2,7 @@
     "require": {
         "stripe/stripe-php": "^16.1",
         "google/apiclient": "^2.18",
-        "dompdf/dompdf": "^3.0"
+        "dompdf/dompdf": "^3.0",
+        "phpmailer/phpmailer": "^6.9"
     }
 }

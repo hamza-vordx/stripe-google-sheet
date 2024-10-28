@@ -11,7 +11,10 @@ $client = new Client();
 $client->setClientId(GOOGLE_CLIENT_ID);
 $client->setClientSecret(GOOGLE_CLIENT_SECRET);
 $client->setRedirectUri(GOOGLE_REDIRECT_URI);
-$client->addScope(Sheets::SPREADSHEETS);
+$client->addScope([
+    Sheets::SPREADSHEETS,
+    Google\Service\Drive::DRIVE_FILE
+]);
 $client->setAccessType('offline'); // For refresh tokens
 
 if (!isset($_GET['code'])) {

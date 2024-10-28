@@ -8,12 +8,56 @@ use Google\Client;
 use Google\Service\Sheets;
 use Dompdf\Dompdf;
 use Dompdf\Options;
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception;
+use Google\Service\Drive;
 
 // Set Stripe API Key
 Stripe::setApiKey(STRIPE_SECRET_KEY);
 
-function sendInvoiceEmail($to, $subject, $message, $htmlContent, $from = "sender@example.com") {
-    // Initialize Dompdf
+function initializeGoogleClient() {
+    $client = new Client();
+    $client->setClientId(GOOGLE_CLIENT_ID);
+    $client->setClientSecret(GOOGLE_CLIENT_SECRET);
+    $client->setRedirectUri(GOOGLE_REDIRECT_URI);
+    $client->addScope(Sheets::SPREADSHEETS);
+    $client->addScope(Google\Service\Drive::DRIVE_FILE);
+    $client->setAccessType('offline'); // Request refresh tokens
+
+    // If there's an existing token, set it
+    if (file_exists('token.json')) {
+        $accessToken = json_decode(file_get_contents('token.json'), true);
+        $client->setAccessToken($accessToken);
+    }
+
+    // Handle token refresh if expired
+    if ($client->isAccessTokenExpired()) {
+        // Refresh token if possible
+        if ($client->getRefreshToken()) {
+            $client->fetchAccessTokenWithRefreshToken($client->getRefreshToken());
+            file_put_contents('token.json', json_encode($client->getAccessToken()));
+        } else {
+            // If no refresh token, get a new access token
+            header('Location: ' . $client->createAuthUrl());
+            exit();
+        }
+    }
+
+    return $client;
+}
+
+$client = initializeGoogleClient();
+
+function sendInvoiceEmailAndSaveToDrive($client, $to, $data, $folderId) {
+    // Step 1: Generate the PDF
+
+    ob_start();
+
+// Include the invoice.php file with the data array
+    include('invoice.php');
+
+// Get the HTML content of the invoice
+    $htmlContent = ob_get_clean();
     $options = new Options();
     $options->set('defaultFont', 'Arial');
     $dompdf = new Dompdf($options);
@@ -21,53 +65,135 @@ function sendInvoiceEmail($to, $subject, $message, $htmlContent, $from = "sender
     $dompdf->setPaper('A4', 'portrait');
     $dompdf->render();
 
-    // Save PDF to a file
-    $pdfOutput = $dompdf->output();
-    $pdfFilePath = 'invoice.pdf';
-    file_put_contents($pdfFilePath, $pdfOutput);
+    // Set a unique filename using a timestamp or unique ID
+    $uniqueFileName = 'invoice_' . $to . '.pdf';
+    $pdfFilePath = __DIR__ . '/' . $uniqueFileName;
+    file_put_contents($pdfFilePath, $dompdf->output());
 
-    // Email headers
-    $headers = "From: $from";
-    $separator = md5(time());
-    $headers .= "\r\nMIME-Version: 1.0\r\n";
-    $headers .= "Content-Type: multipart/mixed; boundary=\"" . $separator . "\"";
+    // Step 2: Upload PDF to Google Drive
+    $fileId = null; // Initialize file ID
+    try {
+        // Authenticate and get the Google Drive service
+        $service = new Drive($client);
 
-    // Email body with attachment
-    $body = "--" . $separator . "\r\n";
-    $body .= "Content-Type: text/plain; charset=\"iso-8859-1\"\r\n";
-    $body .= "Content-Transfer-Encoding: 7bit\r\n\r\n";
-    $body .= $message . "\r\n";
+        // Prepare file metadata with the specific folder ID
+        $fileMetadata = new Drive\DriveFile([
+            'name' => $uniqueFileName,
+            'parents' => [$folderId],
+            'mimeType' => 'application/pdf'
+        ]);
 
-    // Read PDF file content
-    $file_size = filesize($pdfFilePath);
-    $handle = fopen($pdfFilePath, 'r');
-    $content = fread($handle, $file_size);
-    fclose($handle);
-    $content = chunk_split(base64_encode($content));
+        // Upload the file to Google Drive
+        $content = file_get_contents($pdfFilePath);
+        $file = $service->files->create($fileMetadata, [
+            'data' => $content,
+            'mimeType' => 'application/pdf',
+            'uploadType' => 'multipart'
+        ]);
 
-    // Attachment
-    $body .= "--" . $separator . "\r\n";
-    $body .= "Content-Type: application/pdf; name=\"invoice.pdf\"\r\n";
-    $body .= "Content-Transfer-Encoding: base64\r\n";
-    $body .= "Content-Disposition: attachment; filename=\"invoice.pdf\"\r\n\r\n";
-    $body .= $content . "\r\n";
-    $body .= "--" . $separator . "--";
+        $fileId = $file->id; // Get the file ID
+        echo "PDF file uploaded to Google Drive. File ID: " . $fileId;
 
-    // Send email
-    if (mail($to, $subject, $body, $headers)) {
-        echo "Email sent with PDF attachment.";
-    } else {
-        echo "Failed to send email.";
+        // Generate the Google Drive link
+        $fileLink = "https://drive.google.com/file/d/{$fileId}/view?usp=sharing";
+
+    } catch (Exception $e) {
+
+        echo "Failed to upload PDF to Google Drive: " . $e->getMessage();
+        return; // Exit the function if upload fails
     }
 
-    // Optionally, remove the PDF file after sending
-    unlink($pdfFilePath);
+
+    // Return the file link
+    return $fileLink; // Return the URL of the uploaded file
 }
 
-// Example usage
-$htmlContent = file_get_contents('invoice.html'); // Load HTML content from a file
-sendInvoiceEmail("recipient@example.com", "Your Invoice", "Please find attached your invoice.", $htmlContent);
+function sendMail($to,$fileLink,$invoiceData)
+{
 
+    $uniqueFileName = 'invoice_' . $to . '.pdf';
+    $pdfFilePath = __DIR__ . '/' . $uniqueFileName;
+    // Step 3: Send the PDF as an email attachment with PHPMailer
+    $mail = new PHPMailer(true);
+    try {
+        // SMTP settings
+        $mail->isSMTP();
+        $mail->Host = MAIL_HOST; // Your SMTP host
+        $mail->SMTPAuth = true;
+        $mail->Username = MAIL_USERNAME; // Your SMTP username
+        $mail->Password = MAIL_PASSWORD; // Your SMTP password
+        $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS; // Use 'tls' or 'ssl' as necessary
+        $mail->Port = MAIL_PORT; // SMTP port
+
+        // Set sender and recipient
+        $mail->setFrom(MAIL_FROM_ADDRESS, MAIL_FROM_NAME);
+        $mail->addAddress($to); // Add a recipient
+        $invoiceTable = '
+    <html>
+    <head>
+        <style>
+            table { width: 100%; border-collapse: collapse; }
+            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+            th { background-color: #f2f2f2; }
+            h2 { color: #333; }
+        </style>
+    </head>
+    <body>
+        <h2>Invoice Details</h2>
+        <p>Dear ' . $invoiceData['customer_name'] . ',</p>
+        <p>Thank you for your payment. Please find your invoice details below.</p>
+        <table>
+            <tr><th>Reference Number</th><td>' . $invoiceData['ref_number'] . '</td></tr>
+            <tr><th>Session ID</th><td>' . $invoiceData['session_id'] . '</td></tr>
+            <tr><th>Payment Intent</th><td>' . $invoiceData['payment_intent'] . '</td></tr>
+            <tr><th>Email</th><td>' . $invoiceData['email'] . '</td></tr>
+            <tr><th>Phone</th><td>' . $invoiceData['customer_phone'] . '</td></tr>
+            <tr><th>Address</th>
+                <td>'
+            . $invoiceData['address_line1'] . '<br>'
+            . $invoiceData['address_line2'] . '<br>'
+            . $invoiceData['city'] . ', ' . $invoiceData['state'] . '<br>'
+            . $invoiceData['postal_code'] . ', ' . $invoiceData['country'] .
+            '</td>
+            </tr>
+            <tr><th>Product Name</th><td>' . $invoiceData['product_name'] . '</td></tr>
+            <tr><th>Amount Paid</th><td>' . $invoiceData['currency'] . ' ' . number_format($invoiceData['amount_paid'], 2) . '</td></tr>
+            <tr><th>Subtotal</th><td>' . $invoiceData['currency'] . ' ' . number_format($invoiceData['subtotal_amount'], 2) . '</td></tr>
+            <tr><th>Tax Amount</th><td>' . $invoiceData['currency'] . ' ' . number_format($invoiceData['tax_amount'], 2) . '</td></tr>
+            <tr><th>Date</th><td>' . date("F j, Y", strtotime($invoiceData['created_date'])) . '</td></tr>
+        </table>
+        <p>Best regards,</p>
+        <p>' . MAIL_FROM_NAME . '</p>
+    </body>
+    </html>
+';
+        // Email subject and body
+        $mail->Subject = 'TAX Invoice"';
+        $mail->isHTML(true);
+        $mail->Body = $invoiceTable;
+
+        // Attach the PDF
+        if (file_exists($pdfFilePath)) {
+            $mail->addAttachment($pdfFilePath, $uniqueFileName); // Attach the PDF
+        } else {
+            echo "File not found: $pdfFilePath";
+            return; // Exit if the file doesn't exist
+        }
+        // Send email
+        if ($mail->send()) {
+            echo "Email sent with PDF attachment.";
+        } else {
+            echo "Failed to send email.";
+        }
+    } catch (Exception $e) {
+
+        echo "Message could not be sent. Mailer Error: {$mail->ErrorInfo}";
+    }
+
+    // Step 4: Clean up
+//    unlink($pdfFilePath);
+
+}
 // Function to store data in CSV
 function storeInCSV($data) {
     $file = CSV_FILE_PATH;
@@ -82,27 +208,7 @@ function storeInCSV($data) {
 }
 
 // Function to store data in Google Sheets
-function storeInGoogleSheet($data) {
-    $client = new Client();
-    $client->setClientId(GOOGLE_CLIENT_ID);
-    $client->setClientSecret(GOOGLE_CLIENT_SECRET);
-    $client->setRedirectUri(GOOGLE_REDIRECT_URI);
-    $client->addScope(Sheets::SPREADSHEETS);
-    $client->setAccessType('offline'); // For refresh tokens
-
-    // Load previously saved access token if available
-    if (file_exists('token.json')) {
-        $accessToken = json_decode(file_get_contents('token.json'), true);
-        $client->setAccessToken($accessToken);
-    }
-
-    // Refresh the token if it's expired
-    if ($client->isAccessTokenExpired()) {
-        $refreshToken = $accessToken['refresh_token'];
-        $client->fetchAccessTokenWithRefreshToken($refreshToken);
-        // Save the new access token
-        file_put_contents('token.json', json_encode($client->getAccessToken()));
-    }
+function storeInGoogleSheet($client, $data) {
 
     // Now make the Sheets API call
     $service = new Sheets($client);
@@ -130,14 +236,13 @@ function logError($message) {
 // Retrieve the request's body and the Stripe signature header
 $payload = @file_get_contents('php://input');
 $sig_header = $_SERVER['HTTP_STRIPE_SIGNATURE'];
-
 try {
     // Verify the webhook signature
-    $event = Webhook::constructEvent($payload, $sig_header, STRIPE_WEBHOOK_SECRET);
-
+//    $event = Webhook::constructEvent($payload, $sig_header, STRIPE_WEBHOOK_SECRET);
+    $event = json_decode($payload);
     // Handle different event types
     switch ($event->type) {
-        case 'invoice.payment_succeeded':
+        case 'invoice.paid':
             $invoice = $event->data->object;
             $customerEmail = $invoice->customer_email;
             $subscriptionStatus = $invoice->status;
@@ -145,7 +250,7 @@ try {
             $currency = strtoupper($invoice->currency);
             $productName = $invoice->lines->data[0]->description ?? 'N/A'; // Get the product name
             $createdDate = date('Y-m-d H:i:s', $invoice->created); // Convert Unix timestamp to date
-
+            $ref_number  = time();
             $data = [
                 $invoice->id,
                 $customerEmail,
@@ -154,34 +259,89 @@ try {
                 $currency,
                 $productName,
                 $createdDate,
-                'Subscription'
+                $ref_number,
+                'Subscription',
+                $invoice->hosted_invoice_url
+            ];
+            $invoiceData = [
+                'session_id'           => $invoice->id,
+                'payment_intent'       => $invoice->payment_intent,
+                'email'                => $invoice->customer_email,
+                'customer_name'        => $invoice->customer_name ?? 'Client',
+                'customer_phone'       => $invoice->customer_phone ?? 'N/A',
+                'address_line1'        => $invoice->customer_address->line1 ?? '',
+                'address_line2'        => $invoice->customer_details->line2 ?? '',
+                'city'                 => $invoice->customer_details->city ?? '',
+                'postal_code'          => $invoice->customer_details->postal_code ?? '',
+                'state'                => $invoice->customer_details->state ?? '',
+                'country'              => $invoice->customer_details->country ?? '',
+                'amount_paid'          => $amountPaid,
+                'subtotal_amount'      => ($invoice->subtotal / 100),
+                'tax_amount'           => ($invoice->tax / 100) ?? 0,
+                'currency'             => $currency,
+                'product_name'         => $productName,
+                'created_date'         => $createdDate,
+                'ref_number'           => $ref_number
             ];
 
-            storeInCSV($data); // Store data in CSV
-            storeInGoogleSheet($data); // Store data in Google Sheet
+
+            $fileLink =sendInvoiceEmailAndSaveToDrive($client,$customerEmail, $invoiceData, GOOGLE_DRIVE_ID);
+            $data[] = $fileLink;
+            storeInGoogleSheet($client,$data);
+            sendMail($customerEmail,$fileLink,$invoiceData);
+            echo "Uploaded file link: " . $fileLink;
             break;
 
         case 'checkout.session.completed':
+
             $session = $event->data->object;
-            $customerEmail = $session->customer_details->email;
-            $amountPaid = ($session->amount_total / 100); // Convert to dollars
-            $currency = strtoupper($session->currency);
-            $productName = $session->line_items->data[0]->description ?? 'N/A'; // Get the product name
-            $createdDate = date('Y-m-d H:i:s', $session->created); // Convert Unix timestamp to date
+            if ($session->subscription == null) {
+                $customerEmail = $session->customer_details->email;
+                $amountPaid = ($session->amount_total / 100); // Convert to dollars
+                $currency = strtoupper($session->currency);
+                $productName = $session->line_items->data[0]->description ?? 'N/A'; // Get the product name
+                $createdDate = date('Y-m-d H:i:s', $session->created); // Convert Unix timestamp to date
+                $ref_number  = time();
+                $data = [
+                    $session->id,
+                    $customerEmail,
+                    'paid', // Status for one-time payment
+                    $amountPaid,
+                    $currency,
+                    $productName,
+                    $createdDate,
+                    $ref_number,
+                    'One time',
+                    'N/A'
+                ];
+                $invoiceData = [
+                    'session_id'           => $session->id,
+                    'payment_intent'       => $session->payment_intent,
+                    'email'                => $session->customer_details->email,
+                    'customer_name'        => $session->customer_details->name ?? 'Client',
+                    'customer_phone'       => $session->customer_details->phone ?? 'N/A',
+                    'address_line1'        => $session->customer_details->address->line1 ?? '',
+                    'address_line2'        => $session->customer_details->address->line2 ?? '',
+                    'city'                 => $session->customer_details->address->city ?? '',
+                    'postal_code'          => $session->customer_details->address->postal_code ?? '',
+                    'state'                => $session->customer_details->address->state ?? '',
+                    'country'              => $session->customer_details->address->country ?? '',
+                    'amount_paid'          => $amountPaid,
+                    'subtotal_amount'      => ($session->amount_subtotal / 100),
+                    'tax_amount'           => ($session->total_details->amount_tax / 100) ?? 0,
+                    'currency'             => $currency,
+                    'product_name'         => $productName,
+                    'created_date'         => $createdDate,
+                    'ref_number'           => $ref_number
+                ];
 
-            $data = [
-                $session->id,
-                $customerEmail,
-                'paid', // Status for one-time payment
-                $amountPaid,
-                $currency,
-                $productName,
-                $createdDate,
-                'One time'
-            ];
+                $fileLink = sendInvoiceEmailAndSaveToDrive($client,$customerEmail, $invoiceData, GOOGLE_DRIVE_ID);
+                $data[] = $fileLink;
+                storeInGoogleSheet($client,$data);
+                sendMail($customerEmail,$fileLink,$invoiceData);
+                echo "Uploaded file link: " . $fileLink;
+            }
 
-            storeInCSV($data); // Store data in CSV
-            storeInGoogleSheet($data); // Store data in Google Sheet
             break;
 
         default:
@@ -192,6 +352,7 @@ try {
     http_response_code(200); // Respond to Stripe
 } catch (\UnexpectedValueException $e) {
     logError("Invalid payload: " . $e->getMessage());
+
     http_response_code(400); // Invalid payload
     exit();
 } catch (\Stripe\Exception\SignatureVerificationException $e) {

@@ -1,14 +1,9 @@
+
 <?php
-function base64Image($filePath) {
-    $imageData = file_get_contents($filePath);
-    return 'data:image/png;base64,' . base64_encode($imageData);
-}
+// Assuming this will be included with $data
+$data = isset($data) ? $data : []; // Default to an empty array if not set
 
-$logo = base64Image('images/logo.png');
-$stamp = base64Image('images/stamp.png');
-$signature = base64Image('images/signature.png');
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 
@@ -22,12 +17,16 @@ $signature = base64Image('images/signature.png');
         }
 
         .invoice-container {
-            width: 80%;
-            margin: 0 auto;
+            max-width: 990px;
+            margin: auto;
         }
 
         .footer {
             text-align: center;
+        }
+
+        .header {
+            margin-top: 30px;
         }
 
         .header h1 {
@@ -36,22 +35,40 @@ $signature = base64Image('images/signature.png');
 
 
         .company-info {
-            font-weight: 600;
-            font-size: 17px;
+            font-weight: 500;
+            font-size: 12px;
             color: #2e2e2e;
-            line-height: 28px;
+            line-height: normal;
+            font-style: normal;
         }
 
-        .details-table,
-        .summary-table {
+        .details-table {
             width: 100%;
             border-collapse: collapse;
+            margin-top: 20px;
         }
 
-        .details-table td,
-        .summary-table td {
-            padding: 8px;
-            border: 1px solid #ddd;
+        .details-table th,
+        .details-table td {
+            padding: 10px;
+            text-align: center;
+            border: 1px solid #000;
+            /* Darker border for clearer separation */
+        }
+
+        .details-table th {
+            background-color: #f2f2f2;
+            /* Light grey background for headers */
+            font-weight: bold;
+        }
+
+        .details-table tbody tr {
+            background-color: #fff;
+        }
+
+        .details-table tbody tr:nth-child(even) {
+            background-color: #f9f9f9;
+            /* Light alternating row colors */
         }
 
         .summary-table {
@@ -62,64 +79,66 @@ $signature = base64Image('images/signature.png');
             max-width: 200px;
         }
 
-        .stamp {
-            max-width: 100px;
-            position: absolute;
-            bottom: 20px;
-            right: 20px;
-        }
-
         .signature {
             max-width: 100px;
         }
 
         .International {
-            display: flex;
-            gap: 320px;
-            align-items: center;
+            font-size: 12px;
+            font-style: bold;
+            font-weight: 700;
         }
 
         .Tax {
-            font-size: 35px;
+            font-size: 30px;
             font-weight: 500;
+            margin-left: 436px;
+            margin-top: -56px;
         }
 
         .date {
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            font-weight: 700;
+            font-style: bold;
+            font-size: 14px;
+            gap: 10px;
+        }
+
+        .date p {
+            margin: 0;
+            padding: 0;
+        }
+
+        .date2 p {
+            margin: 0;
+            padding: 0;
         }
 
         .date2 {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
+            margin-left: 70px;
+            margin-top: -40px;
         }
 
         .date-container {
-            display: flex;
-            align-items: center;
-            gap: 30px;
-            justify-content: center;
-            padding-left: 390px;
-            font-size: 19px;
-            font-weight: 600;
+            padding-left: 436px;
+            font-size: 12px;
+            margin: -36px 0;
+
         }
 
 
         .client-info {
-            font-weight: 600;
-            font-size: 17px;
+            font-weight: 500;
+            font-size: 12px;
             color: #2e2e2e;
-            line-height: 28px;
+            line-height: normal;
+            font-style: normal;
 
         }
 
         .company-info-div {
-            display: flex;
-            align-items: last baseline;
-            gap: 255px;
-
+            margin-top: 80px;
         }
 
         .client-id {
@@ -127,47 +146,134 @@ $signature = base64Image('images/signature.png');
             font-weight: 600;
         }
 
-        .trn-div {
-            display: flex;
-            gap: 120px;
-            font-size: 18px;
-            font-weight: 600;
+        .trn-name {
+            font-weight: 500;
+            font-size: 12px;
+            color: #2e2e2e;
+            line-height: normal;
+            font-style: normal;
+        }
+
+        .trn-id {
+            font-weight: 500;
+            font-size: 12px;
+            color: #2e2e2e;
+            line-height: normal;
+            margin-top: -25px;
+            margin-left: 105px;
+            font-style: normal;
         }
 
         .billl {
-            font-size: 24px;
+            font-size: 18px;
+            font-weight: 700;
+            margin: 30px 0;
+        }
+
+        .comments {
+            font-size: 16px;
             font-weight: 700;
             margin: 0;
         }
 
         .bill-container {
-            display: flex;
-            gap: 60px;
-            font-size: 18px;
-            font-weight: 600;
-            color: #2e2e2e;
+            margin-bottom: 50px;
+            margin-top: -28px;
+        }
+
+        .bill-container p {
+            font-size: 12px;
+            font-weight: 400;
+            font-style: normal;
+            line-height: normal;
+            margin: 0;
+            padding-top: 5px;
         }
 
         .footer-div {
-            display: flex;
-            text-align: center;
-            font-size: 18px;
-            font-weight: 600;
+            font-size: 14px;
+            font-weight: 500;
+            margin-top: 40px;
+        }
+
+        .footer-div p {
+            margin: 0;
+            padding: 0;
         }
 
         .total-div {
-            font-size: 18px;
-            font-weight: 600;
-            margin-left: 343px;
+            font-size: 16px;
+            font-weight: 700;
+            margin-top: -27px;
+            margin-left: 125px;
+        }
+
+        .main-title {
+            gap: 20px;
+            margin-left: 20px;
+        }
+
+        .main-title h1 {
+            font-size: 16px;
+            color: #dab560;
+            margin-left: 87px;
+            margin-top: -59px;
+        }
+
+        .client {
+            margin-left: 436px;
+            font-weight: 700;
+            font-size: 14px;
+            margin-top: -67px;
+        }
+
+        .client-id {
+            margin-top: -14px;
+            margin-left: 520px;
+            font-weight: 500;
+            font-size: 12px;
+        }
+
+        .bill-details {
+            margin-left: 107px;
+            margin-top: -94px;
+        }
+
+        .stamp {
+            margin-left: 179px;
+            margin-top: -17px;
+        }
+
+        .signature {
+            margin-left: 350px;
+            margin-top: -129px;
+        }
+        .left-align-row td {
+            text-align: left;
+            padding-left: 20px;
         }
     </style>
 </head>
 
 <body>
 <div class="invoice-container">
+
+
+    <!-- title -->
+
+    <div class="main-title">
+        <div>
+            <img src="https://i.ibb.co/FxGPzNb/logo.png" alt="logo">
+        </div>
+        <h1>
+            INTERNATIONAL ACADEMY <br> of FACEPLASTIC AND OSTEOPATHY
+        </h1>
+    </div>
+
+
+
     <!-- Logo -->
     <div class="header">
-        <img src="<?php echo $logo; ?>" alt="">
         <div class="International">
             <h1>International Faceplastic And <br> Osteopathy - FZCO</h1>
             <p class="Tax">Tax Invoice</p>
@@ -183,19 +289,15 @@ $signature = base64Image('images/signature.png');
             faceplasty.academy@gmail.com</p>
     </div>
 
-
-
-
-
     <div class="date-container">
 
         <div class="date">
-            <p style="margin: 0;">DATE:</p>
-            <p style="margin-top: 0;">#</p>
+            <p>DATE:</p>
+            <p>#</p>
         </div>
         <div class="date2">
-            <p style="margin: 0;">01.09.2024</p>
-            <p style="margin-top: 0;">4816</p>
+            <p><?php echo date('Y-m-d', strtotime($data['created_date'])); ?> </p>
+            <p><?php echo $data['ref_number']; ?></p>
         </div>
     </div>
 
@@ -208,14 +310,20 @@ $signature = base64Image('images/signature.png');
                 M & 4th FLOOR, Office No. 45-0110</p>
         </div>
 
-        <p class="client-id">Client ID:</p>
+        <p class="trn-name">TRN:</p>
+        <p class="trn-id"><?php echo $data['payment_intent']; ?> </p>
+
+        <div class="client">
+            CLIENT ID:
+        </div>
+
+        <div class="client-id">
+            <?php echo $data['email']; ?>
+        </div>
 
     </div> <br>
 
-    <div class="trn-div">
-        <p>TRN:</p>
-        <p>104036354900003</p>
-    </div>
+
 
     <p class="billl">Bill To:</p>
 
@@ -228,55 +336,61 @@ $signature = base64Image('images/signature.png');
             <p>TRN:</p>
         </div>
 
-        <div>
-            <p> Elspeth Mackie</p>
-            <p>elspethmac70@gmail.com</p>
-            <p>United Arab Emirates</p>
+        <div class="bill-details">
+            <p> <?php echo $data['customer_name']; ?> </p>
+            <p><?php echo $data['email']; ?> </p>
+            <p><?php echo $data['address_line1'] . ' '. $data['address_line2']. ' '.$data['address_line2']. ' '.$data['city'].
+                ' '.$data['postal_code']. ' '.$data['state']. ' '.$data['country'] ; ?></p>
         </div>
     </div>
 
 
     <!-- Details Table -->
+
+    <p class="comments">comments or special instructions: N/A</p>
+
     <table class="details-table">
+        <thead>
         <tr>
-            <td>Description</td>
-            <td>Quantity</td>
-            <td>Amount/pc (AED)</td>
-            <td>Total Amount (AED)</td>
-            <td>VAT (AED)</td>
+            <th>Product Name</th>
+            <th>Description</th>
+            <th>Quantity</th>
+            <th>Amount/per pc</th>
+            <th>Total Amount </th>
+            <th>VAT </th>
+            <th>Total </th>
         </tr>
+        </thead>
+        <tbody>
         <tr>
             <td>Educational Services</td>
+            <td><?php echo $data['product_name']; ?></td>
             <td>1</td>
-            <td>65.80</td>
-            <td>65.80</td>
-            <td>3.29</td>
+            <td><?php echo $data['subtotal_amount']; ?></td>
+            <td><?php echo $data['subtotal_amount']; ?></td>
+            <td><?php echo $data['tax_amount']; ?></td>
+            <td><?php echo $data['amount_paid']; ?></td>
         </tr>
-    </table>
+        <tr>
+            <td colspan="4"></td>
+            <td><?php echo $data['subtotal_amount']; ?></td>
+            <td><?php echo $data['tax_amount']; ?></td>
+            <td><?php echo $data['amount_paid']; ?></td>
 
-    <!-- Summary Table -->
-    <table class="summary-table">
-        <tr>
-            <td><strong>Total Amount (AED):</strong></td>
-            <td>65.80</td>
         </tr>
-        <tr>
-            <td><strong>VAT (AED):</strong></td>
-            <td>3.29</td>
-        </tr>
-        <tr>
-            <td><strong>Grand Total (AED):</strong></td>
-            <td>69.09</td>
-        </tr>
+        </tbody>
     </table>
-
 
     <p class="total-div">TOTAL</p>
     <!-- Stamp and Signature -->
     <div class="footer-div">
-        <p style="margin-top: 0;">Settlement currency: AED</p>
-        <img src="<?php echo $stamp; ?>" alt="">
-        <img src="<?php echo $signature; ?>" alt="">
+        <p>Settlement currency: <?php echo $data['currency']; ?></p>
+        <div class="stamp">
+            <img src="https://fiverr-res.cloudinary.com/image/upload/f_auto,q_auto/v1/secured-attachments/messaging_message/attachment/70f0f26df6f61c56396184cbb902e6d4-1730134943825/Stamp.png?__cld_token__=exp=1730160748~hmac=64ed271ad1f8e15966910a45c0c5c37063e8f709fd3ccbf860c2e20e8fa16d61" alt="stamp">
+        </div>
+        <div class="signature">
+            <img src="https://fiverr-res.cloudinary.com/image/upload/f_auto,q_auto/v1/secured-attachments/messaging_message/attachment/1c78781a4e93975b94e512d298fe40e3-1730134943575/Signature.png?__cld_token__=exp=1730160748~hmac=ac98205befcaba05826bc2b02af5f939dc6b804bdfcafb1abae7267f420e701c" alt="signature">
+        </div>
     </div>
 </div>
 </body>
