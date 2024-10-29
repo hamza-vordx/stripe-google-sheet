@@ -58,11 +58,13 @@ $data = isset($data) ? $data : []; // Default to an empty array if not set
 
         .details-table th {
             background-color: #f2f2f2;
+            font-size: 14px;
             /* Light grey background for headers */
             font-weight: bold;
         }
 
         .details-table tbody tr {
+            font-size: 12px;
             background-color: #fff;
         }
 
@@ -244,13 +246,29 @@ $data = isset($data) ? $data : []; // Default to an empty array if not set
             margin-top: -17px;
         }
 
+        .stamp img {
+            width: 120px;
+            height: 120px;
+        }
+
         .signature {
             margin-left: 350px;
             margin-top: -129px;
         }
+
+        .signature img {
+            width: 120px;
+            height: 120px;
+        }
+
         .left-align-row td {
             text-align: left;
             padding-left: 20px;
+        }
+        .logo-container img {
+            width: 60px;
+            height: 60px;
+            margin-top: -5px;
         }
     </style>
 </head>
@@ -262,8 +280,16 @@ $data = isset($data) ? $data : []; // Default to an empty array if not set
     <!-- title -->
 
     <div class="main-title">
-        <div>
-            <img src="https://i.ibb.co/FxGPzNb/logo.png" alt="logo">
+        <div class="logo-container">
+            <?php
+            $logoPath = "images/logo.png";
+            if (file_exists($logoPath)) {
+                $logoData = base64_encode(file_get_contents($logoPath));
+                echo '<img src="data:image/png;base64,' . $logoData . '" alt="logo">';
+            } else {
+                echo '<img src=" " alt="logo">';
+            }
+            ?>
         </div>
         <h1>
             INTERNATIONAL ACADEMY <br> of FACEPLASTIC AND OSTEOPATHY
@@ -340,7 +366,7 @@ $data = isset($data) ? $data : []; // Default to an empty array if not set
             <p> <?php echo $data['customer_name']; ?> </p>
             <p><?php echo $data['email']; ?> </p>
             <p><?php echo $data['address_line1'] . ' '. $data['address_line2']. ' '.$data['address_line2']. ' '.$data['city'].
-                ' '.$data['postal_code']. ' '.$data['state']. ' '.$data['country'] ; ?></p>
+                    ' '.$data['postal_code']. ' '.$data['state']. ' '.$data['country'] ; ?></p>
         </div>
     </div>
 
@@ -353,7 +379,6 @@ $data = isset($data) ? $data : []; // Default to an empty array if not set
         <thead>
         <tr>
             <th>Product Name</th>
-            <th>Description</th>
             <th>Quantity</th>
             <th>Amount/per pc</th>
             <th>Total Amount </th>
@@ -364,7 +389,6 @@ $data = isset($data) ? $data : []; // Default to an empty array if not set
         <tbody>
         <tr>
             <td>Educational Services</td>
-            <td><?php echo $data['product_name']; ?></td>
             <td>1</td>
             <td><?php echo $data['subtotal_amount']; ?></td>
             <td><?php echo $data['subtotal_amount']; ?></td>
@@ -372,7 +396,7 @@ $data = isset($data) ? $data : []; // Default to an empty array if not set
             <td><?php echo $data['amount_paid']; ?></td>
         </tr>
         <tr>
-            <td colspan="4"></td>
+            <td colspan="3"></td>
             <td><?php echo $data['subtotal_amount']; ?></td>
             <td><?php echo $data['tax_amount']; ?></td>
             <td><?php echo $data['amount_paid']; ?></td>
@@ -386,10 +410,27 @@ $data = isset($data) ? $data : []; // Default to an empty array if not set
     <div class="footer-div">
         <p>Settlement currency: <?php echo $data['currency']; ?></p>
         <div class="stamp">
-            <img src="https://fiverr-res.cloudinary.com/image/upload/f_auto,q_auto/v1/secured-attachments/messaging_message/attachment/70f0f26df6f61c56396184cbb902e6d4-1730134943825/Stamp.png?__cld_token__=exp=1730160748~hmac=64ed271ad1f8e15966910a45c0c5c37063e8f709fd3ccbf860c2e20e8fa16d61" alt="stamp">
+            <?php
+            $stampPath = "images/stamp.png";
+            if (file_exists($stampPath)) {
+                $stampData = base64_encode(file_get_contents($stampPath));
+                echo '<img src="data:image/png;base64,' . $stampData . '" alt="stamp">';
+            } else {
+                echo '<img src=" " alt="stamp">';
+            }
+            ?>
         </div>
+
         <div class="signature">
-            <img src="https://fiverr-res.cloudinary.com/image/upload/f_auto,q_auto/v1/secured-attachments/messaging_message/attachment/1c78781a4e93975b94e512d298fe40e3-1730134943575/Signature.png?__cld_token__=exp=1730160748~hmac=ac98205befcaba05826bc2b02af5f939dc6b804bdfcafb1abae7267f420e701c" alt="signature">
+            <?php
+            $signaturePath = "images/signature.png";
+            if (file_exists($signaturePath)) {
+                $signatureData = base64_encode(file_get_contents($signaturePath));
+                echo '<img src="data:image/png;base64,' . $signatureData . '" alt="signature">';
+            } else {
+                echo '<img src=" " alt="signature">';
+            }
+            ?>
         </div>
     </div>
 </div>

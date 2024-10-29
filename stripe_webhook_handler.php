@@ -129,44 +129,47 @@ function sendMail($to,$fileLink,$invoiceData)
         $mail->setFrom(MAIL_FROM_ADDRESS, MAIL_FROM_NAME);
         $mail->addAddress($to); // Add a recipient
         $invoiceTable = '
-    <html>
-    <head>
-        <style>
-            table { width: 100%; border-collapse: collapse; }
-            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-            th { background-color: #f2f2f2; }
-            h2 { color: #333; }
-        </style>
-    </head>
-    <body>
-        <h2>Invoice Details</h2>
-        <p>Dear ' . $invoiceData['customer_name'] . ',</p>
-        <p>Thank you for your payment. Please find your invoice details below.</p>
-        <table>
-            <tr><th>Reference Number</th><td>' . $invoiceData['ref_number'] . '</td></tr>
-            <tr><th>Session ID</th><td>' . $invoiceData['session_id'] . '</td></tr>
-            <tr><th>Payment Intent</th><td>' . $invoiceData['payment_intent'] . '</td></tr>
-            <tr><th>Email</th><td>' . $invoiceData['email'] . '</td></tr>
-            <tr><th>Phone</th><td>' . $invoiceData['customer_phone'] . '</td></tr>
-            <tr><th>Address</th>
-                <td>'
-            . $invoiceData['address_line1'] . '<br>'
-            . $invoiceData['address_line2'] . '<br>'
-            . $invoiceData['city'] . ', ' . $invoiceData['state'] . '<br>'
-            . $invoiceData['postal_code'] . ', ' . $invoiceData['country'] .
-            '</td>
-            </tr>
-            <tr><th>Product Name</th><td>' . $invoiceData['product_name'] . '</td></tr>
-            <tr><th>Amount Paid</th><td>' . $invoiceData['currency'] . ' ' . number_format($invoiceData['amount_paid'], 2) . '</td></tr>
-            <tr><th>Subtotal</th><td>' . $invoiceData['currency'] . ' ' . number_format($invoiceData['subtotal_amount'], 2) . '</td></tr>
-            <tr><th>Tax Amount</th><td>' . $invoiceData['currency'] . ' ' . number_format($invoiceData['tax_amount'], 2) . '</td></tr>
-            <tr><th>Date</th><td>' . date("F j, Y", strtotime($invoiceData['created_date'])) . '</td></tr>
-        </table>
-        <p>Best regards,</p>
-        <p>' . MAIL_FROM_NAME . '</p>
-    </body>
-    </html>
-';
+                        <html>
+                        <head>
+                            <style>
+                                body { font-family: Arial, sans-serif; color: #333; margin: 0; padding: 0; }
+                                .invoice-container { width: 100%; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; }
+                                h2 { color: #333; }
+                                .invoice-header { background-color: #f2f2f2; padding: 10px; text-align: center; }
+                                .invoice-details { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px; }
+                                .invoice-details div { padding: 8px; border: 1px solid #ddd; }
+                                .label { font-weight: bold; }
+                            </style>
+                        </head>
+                        <body>
+                            <div class="invoice-container">
+                                <h2 class="invoice-header">Invoice Details</h2>
+                                <p>Dear ' . htmlspecialchars($invoiceData['customer_name']) . ',</p>
+                                <p>Thank you for your payment. Please find your invoice details below.</p>
+                                <div class="invoice-details">
+                                    <div><span class="label">Reference Number:</span> ' . htmlspecialchars($invoiceData['ref_number']) . '</div>
+                                    <div><span class="label">Session ID:</span> ' . htmlspecialchars($invoiceData['session_id']) . '</div>
+                                    <div><span class="label">Payment Intent:</span> ' . htmlspecialchars($invoiceData['payment_intent']) . '</div>
+                                    <div><span class="label">Email:</span> ' . htmlspecialchars($invoiceData['email']) . '</div>
+                                    <div><span class="label">Phone:</span> ' . htmlspecialchars($invoiceData['customer_phone']) . '</div>
+                                    <div><span class="label">Address:</span> '
+                                    . htmlspecialchars($invoiceData['address_line1']) . '<br>'
+                                    . htmlspecialchars($invoiceData['address_line2']) . '<br>'
+                                    . htmlspecialchars($invoiceData['city']) . ', ' . htmlspecialchars($invoiceData['state']) . '<br>'
+                                    . htmlspecialchars($invoiceData['postal_code']) . ', ' . htmlspecialchars($invoiceData['country']) .
+                                    '</div>
+                                    <div><span class="label">Product Name:</span> ' . htmlspecialchars($invoiceData['product_name']) . '</div>
+                                    <div><span class="label">Amount Paid:</span> ' . htmlspecialchars($invoiceData['currency']) . ' ' . number_format($invoiceData['amount_paid'], 2) . '</div>
+                                    <div><span class="label">Subtotal:</span> ' . htmlspecialchars($invoiceData['currency']) . ' ' . number_format($invoiceData['subtotal_amount'], 2) . '</div>
+                                    <div><span class="label">Tax Amount:</span> ' . htmlspecialchars($invoiceData['currency']) . ' ' . number_format($invoiceData['tax_amount'], 2) . '</div>
+                                    <div><span class="label">Date:</span> ' . date("F j, Y", strtotime($invoiceData['created_date'])) . '</div>
+                                </div>
+                                <p>Best regards,</p>
+                                <p>' . htmlspecialchars(MAIL_FROM_NAME) . '</p>
+                            </div>
+                        </body>
+                        </html>
+                        ';
         // Email subject and body
         $mail->Subject = 'TAX Invoice"';
         $mail->isHTML(true);
@@ -191,7 +194,7 @@ function sendMail($to,$fileLink,$invoiceData)
     }
 
     // Step 4: Clean up
-//    unlink($pdfFilePath);
+    unlink($pdfFilePath);
 
 }
 // Function to store data in CSV
